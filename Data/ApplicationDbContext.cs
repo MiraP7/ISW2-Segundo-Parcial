@@ -1,0 +1,44 @@
+using Microsoft.EntityFrameworkCore;
+using ISW2_Primer_parcial.Models;
+
+namespace ISW2_Primer_parcial.Data;
+
+public class ApplicationDbContext : DbContext
+{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+
+    public DbSet<Producto> Productos { get; set; }
+    public DbSet<Inventario> Inventarios { get; set; }
+    public DbSet<MovimientosInventario> MovimientosInventario { get; set; }
+    public DbSet<TipoMovimiento> TipoMovimientos { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Configure relationships
+        modelBuilder.Entity<Inventario>()
+            .HasOne(i => i.Producto)
+            .WithMany()
+            .HasForeignKey(i => i.IdProducto);
+
+        modelBuilder.Entity<MovimientosInventario>()
+            .HasOne(m => m.Producto)
+            .WithMany()
+            .HasForeignKey(m => m.IdProducto);
+
+        modelBuilder.Entity<MovimientosInventario>()
+            .HasOne(m => m.TipoMovimiento)
+            .WithMany()
+            .HasForeignKey(m => m.IdTipoMovimiento);
+
+        // Configure decimal precision
+        modelBuilder.Entity<Producto>()
+            .Property(p => p.PrecioVenta)
+            .HasColumnType("decimal(18,2)");
+
+        // Seed TipoMovimiento
+        modelBuilder.Entity<TipoMovimiento>().HasData(
+            new TipoMovimiento { IdTipoMovimiento = 1, Tipo = "Entrada" },
+            new TipoMovimiento { IdTipoMovimiento = 2, Tipo = "Salida" }
+        );
+    }
+}
