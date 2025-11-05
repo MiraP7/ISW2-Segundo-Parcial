@@ -10,8 +10,10 @@ CREATE TABLE TipoMovimiento (
     IdTipoMovimiento INT PRIMARY KEY,
     Tipo NVARCHAR(50) NOT NULL
 );
+GO
 
 INSERT INTO TipoMovimiento VALUES (1, 'Entrada'), (2, 'Salida');
+GO
 
 -- Tabla Productos
 CREATE TABLE Productos (
@@ -23,6 +25,7 @@ CREATE TABLE Productos (
     FechaCreacion DATETIME DEFAULT GETDATE(),
     UltimaFechaActualizacion DATETIME DEFAULT GETDATE()
 );
+GO
 
 -- Tabla Inventario
 CREATE TABLE Inventario (
@@ -31,6 +34,7 @@ CREATE TABLE Inventario (
     UltimaFechaActualizacion DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (IdProducto) REFERENCES Productos(IdProducto)
 );
+GO
 
 -- Tabla MovimientosInventario
 CREATE TABLE MovimientosInventario (
@@ -43,6 +47,7 @@ CREATE TABLE MovimientosInventario (
     FOREIGN KEY (IdProducto) REFERENCES Productos(IdProducto),
     FOREIGN KEY (IdTipoMovimiento) REFERENCES TipoMovimiento(IdTipoMovimiento)
 );
+GO
 
 -- Procedimientos almacenados para Productos
 

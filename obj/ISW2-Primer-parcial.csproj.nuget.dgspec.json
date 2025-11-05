@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/miranda/Documentos/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Primer-parcial/ISW2-Primer-parcial.csproj": {}
+    "/home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/ISW2-Primer-parcial.csproj": {}
   },
   "projects": {
-    "/home/miranda/Documentos/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Primer-parcial/ISW2-Primer-parcial.csproj": {
+    "/home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/ISW2-Primer-parcial.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/miranda/Documentos/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Primer-parcial/ISW2-Primer-parcial.csproj",
+        "projectUniqueName": "/home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/ISW2-Primer-parcial.csproj",
         "projectName": "ISW2-Primer-parcial",
-        "projectPath": "/home/miranda/Documentos/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Primer-parcial/ISW2-Primer-parcial.csproj",
+        "projectPath": "/home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/ISW2-Primer-parcial.csproj",
         "packagesPath": "/home/miranda/.nuget/packages/",
-        "outputPath": "/home/miranda/Documentos/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Primer-parcial/obj/",
+        "outputPath": "/home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/miranda/.nuget/NuGet/NuGet.Config"
@@ -80,7 +80,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/9.0.306/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.306/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

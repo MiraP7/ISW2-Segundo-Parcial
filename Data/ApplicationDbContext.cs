@@ -14,6 +14,12 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Configure table names
+        modelBuilder.Entity<Producto>().ToTable("Productos");
+        modelBuilder.Entity<Inventario>().ToTable("Inventario");
+        modelBuilder.Entity<MovimientosInventario>().ToTable("MovimientosInventario");
+        modelBuilder.Entity<TipoMovimiento>().ToTable("TipoMovimiento");
+        
         // Configure relationships
         modelBuilder.Entity<Inventario>()
             .HasOne(i => i.Producto)

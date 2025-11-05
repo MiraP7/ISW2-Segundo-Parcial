@@ -218,3 +218,4 @@
 /home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/obj/Debug/net9.0/ISW2-Primer-parcial.pdb
 /home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/obj/Debug/net9.0/ISW2-Primer-parcial.genruntimeconfig.cache
 /home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/obj/Debug/net9.0/ref/ISW2-Primer-parcial.dll
+/home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/obj/Debug/net9.0/ISW2-Primer-parcial.sourcelink.json

@@ -20,14 +20,14 @@ public class ProductosController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Producto>>> GetProductos()
     {
-        return await _context.Productos.FromSqlRaw("EXEC GetProductos").ToListAsync();
+        return await _context.Productos.ToListAsync();
     }
 
     // GET: api/Productos/5
     [HttpGet("{id}")]
     public async Task<ActionResult<Producto>> GetProducto(int id)
     {
-        var producto = await _context.Productos.FromSqlRaw("EXEC GetProducto @p0", id).FirstOrDefaultAsync();
+        var producto = await _context.Productos.FirstOrDefaultAsync(p => p.IdProducto == id);
 
         if (producto == null)
         {
@@ -41,8 +41,10 @@ public class ProductosController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Producto>> PostProducto(Producto producto)
     {
-        var id = await _context.Productos.FromSqlRaw("EXEC InsertProducto @p0, @p1, @p2, @p3", producto.Nombre, producto.Descripcion ?? "", producto.PrecioVenta, producto.MinimoExistencia).Select(p => p.IdProducto).FirstOrDefaultAsync();
-        producto.IdProducto = id;
+        // Insertar directamente en la tabla
+        _context.Productos.Add(producto);
+        await _context.SaveChangesAsync();
+        
         return CreatedAtAction(nameof(GetProducto), new { id = producto.IdProducto }, producto);
     }
 
@@ -55,7 +57,9 @@ public class ProductosController : ControllerBase
             return BadRequest();
         }
 
-        await _context.Database.ExecuteSqlRawAsync("EXEC UpdateProducto @p0, @p1, @p2, @p3, @p4", id, producto.Nombre, producto.Descripcion ?? "", producto.PrecioVenta, producto.MinimoExistencia);
+        _context.Entry(producto).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+        
         return NoContent();
     }
 
@@ -63,7 +67,15 @@ public class ProductosController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProducto(int id)
     {
-        await _context.Database.ExecuteSqlRawAsync("EXEC DeleteProducto @p0", id);
+        var producto = await _context.Productos.FindAsync(id);
+        if (producto == null)
+        {
+            return NotFound();
+        }
+
+        _context.Productos.Remove(producto);
+        await _context.SaveChangesAsync();
+        
         return NoContent();
     }
 }

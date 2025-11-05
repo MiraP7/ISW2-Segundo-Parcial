@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "uEHrrtb55Wg=",
+  "dgSpecHash": "c/MtcCm8guQ=",
   "success": true,
-  "projectFilePath": "/home/miranda/Documentos/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Primer-parcial/ISW2-Primer-parcial.csproj",
+  "projectFilePath": "/home/miranda/Documents/UNICDA - Asignaciones - Soft/ingenieria-de-servicios-web2/ISW2-Segundo-Parcial/ISW2-Primer-parcial.csproj",
   "expectedPackageFiles": [
     "/home/miranda/.nuget/packages/azure.core/1.38.0/azure.core.1.38.0.nupkg.sha512",
     "/home/miranda/.nuget/packages/azure.identity/1.11.4/azure.identity.1.11.4.nupkg.sha512",
