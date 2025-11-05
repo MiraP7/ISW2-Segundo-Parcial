@@ -41,7 +41,7 @@ public class ProductosController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Producto>> PostProducto(Producto producto)
     {
-        var id = await _context.Productos.FromSqlRaw("EXEC InsertProducto @p0, @p1, @p2", producto.Nombre, producto.Descripcion ?? "", producto.PrecioVenta).Select(p => p.IdProducto).FirstOrDefaultAsync();
+        var id = await _context.Productos.FromSqlRaw("EXEC InsertProducto @p0, @p1, @p2, @p3", producto.Nombre, producto.Descripcion ?? "", producto.PrecioVenta, producto.MinimoExistencia).Select(p => p.IdProducto).FirstOrDefaultAsync();
         producto.IdProducto = id;
         return CreatedAtAction(nameof(GetProducto), new { id = producto.IdProducto }, producto);
     }
@@ -55,7 +55,7 @@ public class ProductosController : ControllerBase
             return BadRequest();
         }
 
-        await _context.Database.ExecuteSqlRawAsync("EXEC UpdateProducto @p0, @p1, @p2, @p3", id, producto.Nombre, producto.Descripcion ?? "", producto.PrecioVenta);
+        await _context.Database.ExecuteSqlRawAsync("EXEC UpdateProducto @p0, @p1, @p2, @p3, @p4", id, producto.Nombre, producto.Descripcion ?? "", producto.PrecioVenta, producto.MinimoExistencia);
         return NoContent();
     }
 

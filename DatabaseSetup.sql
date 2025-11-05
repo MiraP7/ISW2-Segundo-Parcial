@@ -19,6 +19,7 @@ CREATE TABLE Productos (
     Nombre NVARCHAR(100) NOT NULL,
     Descripcion NVARCHAR(255),
     PrecioVenta DECIMAL(18,2) NOT NULL,
+    MinimoExistencia INT NOT NULL DEFAULT 0,
     FechaCreacion DATETIME DEFAULT GETDATE(),
     UltimaFechaActualizacion DATETIME DEFAULT GETDATE()
 );
@@ -59,19 +60,19 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE InsertProducto @Nombre NVARCHAR(100), @Descripcion NVARCHAR(255), @PrecioVenta DECIMAL(18,2)
+CREATE PROCEDURE InsertProducto @Nombre NVARCHAR(100), @Descripcion NVARCHAR(255), @PrecioVenta DECIMAL(18,2), @MinimoExistencia INT
 AS
 BEGIN
-    INSERT INTO Productos (Nombre, Descripcion, PrecioVenta, FechaCreacion, UltimaFechaActualizacion)
-    VALUES (@Nombre, @Descripcion, @PrecioVenta, GETDATE(), GETDATE());
+    INSERT INTO Productos (Nombre, Descripcion, PrecioVenta, MinimoExistencia, FechaCreacion, UltimaFechaActualizacion)
+    VALUES (@Nombre, @Descripcion, @PrecioVenta, @MinimoExistencia, GETDATE(), GETDATE());
     SELECT SCOPE_IDENTITY() AS IdProducto;
 END
 GO
 
-CREATE PROCEDURE UpdateProducto @IdProducto INT, @Nombre NVARCHAR(100), @Descripcion NVARCHAR(255), @PrecioVenta DECIMAL(18,2)
+CREATE PROCEDURE UpdateProducto @IdProducto INT, @Nombre NVARCHAR(100), @Descripcion NVARCHAR(255), @PrecioVenta DECIMAL(18,2), @MinimoExistencia INT
 AS
 BEGIN
-    UPDATE Productos SET Nombre = @Nombre, Descripcion = @Descripcion, PrecioVenta = @PrecioVenta, UltimaFechaActualizacion = GETDATE()
+    UPDATE Productos SET Nombre = @Nombre, Descripcion = @Descripcion, PrecioVenta = @PrecioVenta, MinimoExistencia = @MinimoExistencia, UltimaFechaActualizacion = GETDATE()
     WHERE IdProducto = @IdProducto;
 END
 GO

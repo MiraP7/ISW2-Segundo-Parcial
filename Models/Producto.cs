@@ -15,6 +15,9 @@ public class Producto
     [Required]
     public decimal PrecioVenta { get; set; }
 
+    [Required]
+    public int MinimoExistencia { get; set; } = 0;
+
     public DateTime FechaCreacion { get; set; } = DateTime.Now;
 
     public DateTime UltimaFechaActualizacion { get; set; } = DateTime.Now;
