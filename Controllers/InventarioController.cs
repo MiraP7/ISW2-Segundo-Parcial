@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using ISW2_Primer_parcial.Data;
-using ISW2_Primer_parcial.Models;
 
 namespace ISW2_Primer_parcial.Controllers;
 
@@ -20,47 +20,56 @@ public class InventarioController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<object>>> GetInventario()
     {
-        var inventario = await _context.Inventarios
-            .Include(i => i.Producto)
-            .Select(i => new
-            {
-                i.IdProducto,
-                Producto = i.Producto!.Nombre,
-                i.Existencia,
-                MinimoExistencia = i.Producto!.MinimoExistencia,
-                Estado = i.Existencia > i.Producto!.MinimoExistencia ? "Normal" :
-                         i.Existencia == i.Producto!.MinimoExistencia ? "En Mínimo" : "Bajo Mínimo",
-                i.UltimaFechaActualizacion
-            })
-            .ToListAsync();
+        var connection = _context.Database.GetDbConnection();
+        await connection.OpenAsync();
 
-        return inventario;
+        using var command = connection.CreateCommand();
+        command.CommandText = "EXEC GetInventario";
+
+        var inventario = new List<object>();
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            inventario.Add(new
+            {
+                IdProducto = reader.GetInt32(0),
+                Producto = reader.GetString(1),
+                Existencia = reader.GetInt32(2),
+                MinimoExistencia = reader.GetInt32(3),
+                Estado = reader.GetString(4),
+                UltimaFechaActualizacion = reader.GetDateTime(5)
+            });
+        }
+
+        return Ok(inventario);
     }
 
     // GET: api/Inventario/5
     [HttpGet("{idProducto}")]
     public async Task<ActionResult<object>> GetInventarioProducto(int idProducto)
     {
-        var inventario = await _context.Inventarios
-            .Include(i => i.Producto)
-            .FirstOrDefaultAsync(i => i.IdProducto == idProducto);
+        var connection = _context.Database.GetDbConnection();
+        await connection.OpenAsync();
 
-        if (inventario == null)
+        using var command = connection.CreateCommand();
+        command.CommandText = "EXEC GetInventarioByProducto @IdProducto";
+        command.Parameters.Add(new SqlParameter("@IdProducto", idProducto));
+
+        using var reader = await command.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
         {
-            return NotFound(new { mensaje = "No hay inventario para este producto." });
+            var resultado = new
+            {
+                IdProducto = reader.GetInt32(0),
+                Producto = reader.GetString(1),
+                Existencia = reader.GetInt32(2),
+                MinimoExistencia = reader.GetInt32(3),
+                Estado = reader.GetString(4),
+                UltimaFechaActualizacion = reader.GetDateTime(5)
+            };
+            return Ok(resultado);
         }
 
-        var resultado = new
-        {
-            inventario.IdProducto,
-            Producto = inventario.Producto!.Nombre,
-            inventario.Existencia,
-            MinimoExistencia = inventario.Producto!.MinimoExistencia,
-            Estado = inventario.Existencia > inventario.Producto!.MinimoExistencia ? "Normal" :
-                     inventario.Existencia == inventario.Producto!.MinimoExistencia ? "En Mínimo" : "Bajo Mínimo",
-            inventario.UltimaFechaActualizacion
-        };
-
-        return resultado;
+        return NotFound(new { mensaje = "No hay inventario para este producto." });
     }
 }

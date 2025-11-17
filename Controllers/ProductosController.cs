@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using ISW2_Primer_parcial.Data;
 using ISW2_Primer_parcial.Models;
+using System.Data;
 
 namespace ISW2_Primer_parcial.Controllers;
 
@@ -10,7 +12,6 @@ namespace ISW2_Primer_parcial.Controllers;
 public class ProductosController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-    private const string CodigoDuplicadoMensaje = "No se puede ingresar este producto porque ya existe ese mismo código de producto en otro producto.";
 
     public ProductosController(ApplicationDbContext context)
     {
@@ -21,15 +22,74 @@ public class ProductosController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Producto>>> GetProductos()
     {
-        return await _context.Productos.ToListAsync();
+        var productos = new List<Producto>();
+        
+        using (var connection = _context.Database.GetDbConnection())
+        {
+            await connection.OpenAsync();
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "EXEC GetProductos";
+                
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        productos.Add(new Producto
+                        {
+                            IdProducto = reader.GetInt32(reader.GetOrdinal("IdProducto")),
+                            Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
+                            CodigoProducto = reader.GetString(reader.GetOrdinal("CodigoProducto")),
+                            Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString(reader.GetOrdinal("Descripcion")),
+                            PrecioVenta = reader.GetDecimal(reader.GetOrdinal("PrecioVenta")),
+                            MinimoExistencia = reader.GetInt32(reader.GetOrdinal("MinimoExistencia")),
+                            Eliminado = reader.GetBoolean(reader.GetOrdinal("Eliminado")),
+                            FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
+                            UltimaFechaActualizacion = reader.GetDateTime(reader.GetOrdinal("UltimaFechaActualizacion"))
+                        });
+                    }
+                }
+            }
+        }
+        
+        return productos;
     }
 
     // GET: api/Productos/5
     [HttpGet("{id}")]
     public async Task<ActionResult<Producto>> GetProducto(int id)
     {
-        var producto = await _context.Productos.FirstOrDefaultAsync(p => p.IdProducto == id);
-
+        Producto? producto = null;
+        
+        using (var connection = _context.Database.GetDbConnection())
+        {
+            await connection.OpenAsync();
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "EXEC GetProducto @IdProducto";
+                command.Parameters.Add(new SqlParameter("@IdProducto", id));
+                
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        producto = new Producto
+                        {
+                            IdProducto = reader.GetInt32(reader.GetOrdinal("IdProducto")),
+                            Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
+                            CodigoProducto = reader.GetString(reader.GetOrdinal("CodigoProducto")),
+                            Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString(reader.GetOrdinal("Descripcion")),
+                            PrecioVenta = reader.GetDecimal(reader.GetOrdinal("PrecioVenta")),
+                            MinimoExistencia = reader.GetInt32(reader.GetOrdinal("MinimoExistencia")),
+                            Eliminado = reader.GetBoolean(reader.GetOrdinal("Eliminado")),
+                            FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
+                            UltimaFechaActualizacion = reader.GetDateTime(reader.GetOrdinal("UltimaFechaActualizacion"))
+                        };
+                    }
+                }
+            }
+        }
+        
         if (producto == null)
         {
             return NotFound();
@@ -42,23 +102,46 @@ public class ProductosController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Producto>> PostProducto(Producto producto)
     {
-        var codigoEnUso = await _context.Productos
-            .IgnoreQueryFilters()
-            .AnyAsync(p => p.CodigoProducto == producto.CodigoProducto);
+        int nuevoId = 0;
+        string? codigoGenerado = null;
+        string? mensaje = null;
 
-        if (codigoEnUso)
+        using (var connection = (SqlConnection)_context.Database.GetDbConnection())
         {
-            return BadRequest(CodigoDuplicadoMensaje);
+            await connection.OpenAsync();
+            using (var command = new SqlCommand("InsertProducto", connection))
+            {
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.Add(new SqlParameter("@Nombre", producto.Nombre));
+                command.Parameters.Add(new SqlParameter("@Descripcion", (object?)producto.Descripcion ?? DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@PrecioVenta", producto.PrecioVenta));
+                command.Parameters.Add(new SqlParameter("@MinimoExistencia", producto.MinimoExistencia));
+                
+                var idParam = new SqlParameter("@IdProducto", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                var codigoParam = new SqlParameter("@CodigoProducto", SqlDbType.NVarChar, 50) { Direction = ParameterDirection.Output };
+                var mensajeParam = new SqlParameter("@Mensaje", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
+                
+                command.Parameters.Add(idParam);
+                command.Parameters.Add(codigoParam);
+                command.Parameters.Add(mensajeParam);
+
+                await command.ExecuteNonQueryAsync();
+
+                nuevoId = (int)idParam.Value;
+                codigoGenerado = codigoParam.Value?.ToString();
+                mensaje = mensajeParam.Value?.ToString();
+            }
         }
 
-        producto.Eliminado = false;
-        producto.FechaCreacion = DateTime.UtcNow;
-        producto.UltimaFechaActualizacion = DateTime.UtcNow;
+        if (nuevoId == -1)
+        {
+            return BadRequest(mensaje);
+        }
 
-        _context.Productos.Add(producto);
-        await _context.SaveChangesAsync();
-        
-        return CreatedAtAction(nameof(GetProducto), new { id = producto.IdProducto }, producto);
+        producto.IdProducto = nuevoId;
+        producto.CodigoProducto = codigoGenerado ?? "";
+        return CreatedAtAction(nameof(GetProducto), new { id = nuevoId }, producto);
     }
 
     // PUT: api/Productos/5
@@ -67,33 +150,38 @@ public class ProductosController : ControllerBase
     {
         if (id != producto.IdProducto)
         {
-            return BadRequest();
+            return BadRequest("El ID de la URL no coincide con el ID del producto.");
         }
 
-        var productoExistente = await _context.Productos.FirstOrDefaultAsync(p => p.IdProducto == id);
-        if (productoExistente is null)
+        string? mensaje = null;
+
+        using (var connection = (SqlConnection)_context.Database.GetDbConnection())
         {
-            return NotFound();
+            await connection.OpenAsync();
+            using (var command = new SqlCommand("UpdateProducto", connection))
+            {
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.Add(new SqlParameter("@IdProducto", id));
+                command.Parameters.Add(new SqlParameter("@Nombre", producto.Nombre));
+                command.Parameters.Add(new SqlParameter("@Descripcion", (object?)producto.Descripcion ?? DBNull.Value));
+                command.Parameters.Add(new SqlParameter("@PrecioVenta", producto.PrecioVenta));
+                command.Parameters.Add(new SqlParameter("@MinimoExistencia", producto.MinimoExistencia));
+                
+                var mensajeParam = new SqlParameter("@Mensaje", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
+                command.Parameters.Add(mensajeParam);
+
+                await command.ExecuteNonQueryAsync();
+
+                mensaje = mensajeParam.Value?.ToString();
+            }
         }
 
-        var codigoEnUso = await _context.Productos
-            .IgnoreQueryFilters()
-            .AnyAsync(p => p.IdProducto != id && p.CodigoProducto == producto.CodigoProducto);
-
-        if (codigoEnUso)
+        if (mensaje?.Contains("no encontrado") == true)
         {
-            return BadRequest(CodigoDuplicadoMensaje);
+            return NotFound(mensaje);
         }
 
-        productoExistente.Nombre = producto.Nombre;
-        productoExistente.Descripcion = producto.Descripcion;
-        productoExistente.PrecioVenta = producto.PrecioVenta;
-        productoExistente.MinimoExistencia = producto.MinimoExistencia;
-        productoExistente.CodigoProducto = producto.CodigoProducto;
-        productoExistente.UltimaFechaActualizacion = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync();
-        
         return NoContent();
     }
 
@@ -101,24 +189,31 @@ public class ProductosController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProducto(int id)
     {
-        var producto = await _context.Productos
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(p => p.IdProducto == id);
+        string? mensaje = null;
 
-        if (producto == null)
+        using (var connection = (SqlConnection)_context.Database.GetDbConnection())
         {
-            return NotFound();
+            await connection.OpenAsync();
+            using (var command = new SqlCommand("DeleteProducto", connection))
+            {
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.Add(new SqlParameter("@IdProducto", id));
+                
+                var mensajeParam = new SqlParameter("@Mensaje", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
+                command.Parameters.Add(mensajeParam);
+
+                await command.ExecuteNonQueryAsync();
+
+                mensaje = mensajeParam.Value?.ToString();
+            }
         }
 
-        if (producto.Eliminado)
+        if (mensaje?.Contains("no encontrado") == true)
         {
-            return NoContent();
+            return NotFound(mensaje);
         }
 
-        producto.Eliminado = true;
-        producto.UltimaFechaActualizacion = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-        
         return NoContent();
     }
 }

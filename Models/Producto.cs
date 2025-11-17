@@ -10,9 +10,8 @@ public class Producto
     [Required]
     public required string Nombre { get; set; }
 
-    [Required]
-    [StringLength(50)]
-    public required string CodigoProducto { get; set; }
+    // CodigoProducto se genera automáticamente, no debe enviarse en POST/PUT
+    public string CodigoProducto { get; set; } = string.Empty;
 
     public string? Descripcion { get; set; }
 
@@ -22,9 +21,8 @@ public class Producto
     [Required]
     public int MinimoExistencia { get; set; } = 0;
 
+    // Propiedades de sistema - no modificables por el usuario
     public bool Eliminado { get; set; } = false;
-
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
-
     public DateTime UltimaFechaActualizacion { get; set; } = DateTime.UtcNow;
 }
