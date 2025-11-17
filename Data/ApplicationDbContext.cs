@@ -19,6 +19,13 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Inventario>().ToTable("Inventario");
         modelBuilder.Entity<MovimientosInventario>().ToTable("MovimientosInventario");
         modelBuilder.Entity<TipoMovimiento>().ToTable("TipoMovimiento");
+
+        modelBuilder.Entity<Producto>()
+            .HasIndex(p => p.CodigoProducto)
+            .IsUnique();
+
+        modelBuilder.Entity<Producto>()
+            .HasQueryFilter(p => !p.Eliminado);
         
         // Configure relationships
         modelBuilder.Entity<Inventario>()

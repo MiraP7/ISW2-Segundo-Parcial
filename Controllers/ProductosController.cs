@@ -10,6 +10,7 @@ namespace ISW2_Primer_parcial.Controllers;
 public class ProductosController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private const string CodigoDuplicadoMensaje = "No se puede ingresar este producto porque ya existe ese mismo código de producto en otro producto.";
 
     public ProductosController(ApplicationDbContext context)
     {
@@ -41,7 +42,19 @@ public class ProductosController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Producto>> PostProducto(Producto producto)
     {
-        // Insertar directamente en la tabla
+        var codigoEnUso = await _context.Productos
+            .IgnoreQueryFilters()
+            .AnyAsync(p => p.CodigoProducto == producto.CodigoProducto);
+
+        if (codigoEnUso)
+        {
+            return BadRequest(CodigoDuplicadoMensaje);
+        }
+
+        producto.Eliminado = false;
+        producto.FechaCreacion = DateTime.UtcNow;
+        producto.UltimaFechaActualizacion = DateTime.UtcNow;
+
         _context.Productos.Add(producto);
         await _context.SaveChangesAsync();
         
@@ -57,7 +70,28 @@ public class ProductosController : ControllerBase
             return BadRequest();
         }
 
-        _context.Entry(producto).State = EntityState.Modified;
+        var productoExistente = await _context.Productos.FirstOrDefaultAsync(p => p.IdProducto == id);
+        if (productoExistente is null)
+        {
+            return NotFound();
+        }
+
+        var codigoEnUso = await _context.Productos
+            .IgnoreQueryFilters()
+            .AnyAsync(p => p.IdProducto != id && p.CodigoProducto == producto.CodigoProducto);
+
+        if (codigoEnUso)
+        {
+            return BadRequest(CodigoDuplicadoMensaje);
+        }
+
+        productoExistente.Nombre = producto.Nombre;
+        productoExistente.Descripcion = producto.Descripcion;
+        productoExistente.PrecioVenta = producto.PrecioVenta;
+        productoExistente.MinimoExistencia = producto.MinimoExistencia;
+        productoExistente.CodigoProducto = producto.CodigoProducto;
+        productoExistente.UltimaFechaActualizacion = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
         
         return NoContent();
@@ -67,13 +101,22 @@ public class ProductosController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProducto(int id)
     {
-        var producto = await _context.Productos.FindAsync(id);
+        var producto = await _context.Productos
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.IdProducto == id);
+
         if (producto == null)
         {
             return NotFound();
         }
 
-        _context.Productos.Remove(producto);
+        if (producto.Eliminado)
+        {
+            return NoContent();
+        }
+
+        producto.Eliminado = true;
+        producto.UltimaFechaActualizacion = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         
         return NoContent();

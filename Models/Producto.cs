@@ -10,6 +10,10 @@ public class Producto
     [Required]
     public required string Nombre { get; set; }
 
+    [Required]
+    [StringLength(50)]
+    public required string CodigoProducto { get; set; }
+
     public string? Descripcion { get; set; }
 
     [Required]
@@ -18,7 +22,9 @@ public class Producto
     [Required]
     public int MinimoExistencia { get; set; } = 0;
 
-    public DateTime FechaCreacion { get; set; } = DateTime.Now;
+    public bool Eliminado { get; set; } = false;
 
-    public DateTime UltimaFechaActualizacion { get; set; } = DateTime.Now;
+    public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
+    public DateTime UltimaFechaActualizacion { get; set; } = DateTime.UtcNow;
 }
