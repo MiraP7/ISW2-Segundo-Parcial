@@ -214,6 +214,12 @@ public class ProductosController : ControllerBase
             return NotFound(mensaje);
         }
 
+        // Validar restricciones de integridad
+        if (mensaje?.Contains("inventario") == true || mensaje?.Contains("movimientos") == true || mensaje?.Contains("asociados") == true)
+        {
+            return Conflict(new { error = mensaje, code = "INTEGRITY_CONSTRAINT_VIOLATION" });
+        }
+
         return NoContent();
     }
 }

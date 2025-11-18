@@ -36,19 +36,20 @@ BEGIN
 END
 GO
 
--- Tabla Inventario
+-- Tabla Inventario (con ON DELETE RESTRICT)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Inventario')
 BEGIN
     CREATE TABLE Inventario (
         IdProducto INT PRIMARY KEY,
         Existencia INT NOT NULL DEFAULT 0,
         UltimaFechaActualizacion DATETIME DEFAULT GETUTCDATE(),
-        FOREIGN KEY (IdProducto) REFERENCES Productos(IdProducto)
+        CONSTRAINT FK_Inventario_Producto FOREIGN KEY (IdProducto) 
+            REFERENCES Productos(IdProducto) ON DELETE NO ACTION ON UPDATE CASCADE
     );
 END
 GO
 
--- Tabla MovimientosInventario
+-- Tabla MovimientosInventario (con ON DELETE RESTRICT)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'MovimientosInventario')
 BEGIN
     CREATE TABLE MovimientosInventario (
@@ -58,8 +59,10 @@ BEGIN
         Cantidad INT NOT NULL,
         IdTipoMovimiento INT NOT NULL,
         UltimaFechaActualizacion DATETIME DEFAULT GETUTCDATE(),
-        FOREIGN KEY (IdProducto) REFERENCES Productos(IdProducto),
-        FOREIGN KEY (IdTipoMovimiento) REFERENCES TipoMovimiento(IdTipoMovimiento)
+        CONSTRAINT FK_MovimientosInventario_Producto FOREIGN KEY (IdProducto) 
+            REFERENCES Productos(IdProducto) ON DELETE NO ACTION ON UPDATE CASCADE,
+        CONSTRAINT FK_MovimientosInventario_TipoMovimiento FOREIGN KEY (IdTipoMovimiento) 
+            REFERENCES TipoMovimiento(IdTipoMovimiento) ON DELETE NO ACTION ON UPDATE CASCADE
     );
 END
 GO
@@ -166,7 +169,7 @@ BEGIN
 END
 GO
 
--- SP: DeleteProducto (borrado lógico)
+-- SP: DeleteProducto (borrado lógico con validaciones de integridad)
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'DeleteProducto')
     DROP PROCEDURE DeleteProducto;
 GO
@@ -177,18 +180,34 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
+    -- Verificar que el producto existe
     IF NOT EXISTS (SELECT 1 FROM Productos WHERE IdProducto = @IdProducto)
     BEGIN
         SET @Mensaje = 'Producto no encontrado.';
         RETURN;
     END
     
+    -- RESTRICCIÓN 1: Verificar si existe en Inventario
+    IF EXISTS (SELECT 1 FROM Inventario WHERE IdProducto = @IdProducto)
+    BEGIN
+        SET @Mensaje = 'No se puede eliminar el producto porque tiene registros de inventario asociados.';
+        RETURN;
+    END
+    
+    -- RESTRICCIÓN 2: Verificar si existe en MovimientosInventario
+    IF EXISTS (SELECT 1 FROM MovimientosInventario WHERE IdProducto = @IdProducto)
+    BEGIN
+        SET @Mensaje = 'No se puede eliminar el producto porque tiene movimientos de inventario asociados.';
+        RETURN;
+    END
+    
+    -- Si no hay restricciones, proceder con el borrado lógico
     UPDATE Productos 
     SET Eliminado = 1, 
         UltimaFechaActualizacion = GETUTCDATE()
     WHERE IdProducto = @IdProducto;
     
-    SET @Mensaje = 'Producto eliminado (borrado lógico).';
+    SET @Mensaje = 'Producto eliminado exitosamente (borrado lógico).';
 END
 GO
 
