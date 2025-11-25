@@ -1,10 +1,10 @@
 using ISW2_Primer_parcial.Data;
+using ISW2_Primer_parcial.Middleware;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 builder.Services.AddEndpointsApiExplorer();
@@ -23,6 +23,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Agregar middleware de autenticación por API Key
+app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
+
 app.MapControllers();
 
 app.Run();

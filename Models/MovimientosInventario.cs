@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ISW2_Primer_parcial.Models;
 
@@ -8,7 +9,7 @@ public class MovimientosInventario
     public int IdMovimiento { get; set; }
 
     [Required]
-    public int IdProducto { get; set; }
+    public int IdProductoAsociado { get; set; }
 
     [Required]
     public DateTime Fecha { get; set; }
@@ -22,6 +23,7 @@ public class MovimientosInventario
     public DateTime UltimaFechaActualizacion { get; set; } = DateTime.Now;
 
     // Navigation
+    [ForeignKey("IdProductoAsociado")]
     public Producto? Producto { get; set; }
     public TipoMovimiento? TipoMovimiento { get; set; }
 }

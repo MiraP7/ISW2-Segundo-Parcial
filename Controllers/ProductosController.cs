@@ -22,80 +22,40 @@ public class ProductosController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Producto>>> GetProductos()
     {
-        var productos = new List<Producto>();
-        
-        using (var connection = _context.Database.GetDbConnection())
+        try
         {
-            await connection.OpenAsync();
-            using (var command = connection.CreateCommand())
-            {
-                command.CommandText = "EXEC GetProductos";
-                
-                using (var reader = await command.ExecuteReaderAsync())
-                {
-                    while (await reader.ReadAsync())
-                    {
-                        productos.Add(new Producto
-                        {
-                            IdProducto = reader.GetInt32(reader.GetOrdinal("IdProducto")),
-                            Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                            CodigoProducto = reader.GetString(reader.GetOrdinal("CodigoProducto")),
-                            Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString(reader.GetOrdinal("Descripcion")),
-                            PrecioVenta = reader.GetDecimal(reader.GetOrdinal("PrecioVenta")),
-                            MinimoExistencia = reader.GetInt32(reader.GetOrdinal("MinimoExistencia")),
-                            Eliminado = reader.GetBoolean(reader.GetOrdinal("Eliminado")),
-                            FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
-                            UltimaFechaActualizacion = reader.GetDateTime(reader.GetOrdinal("UltimaFechaActualizacion"))
-                        });
-                    }
-                }
-            }
+            var productos = await _context.Productos.FromSqlInterpolated($"EXEC GetProductos")
+                .IgnoreQueryFilters()
+                .ToListAsync();
+            return productos;
         }
-        
-        return productos;
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error interno", detalle = ex.Message });
+        }
     }
 
     // GET: api/Productos/5
     [HttpGet("{id}")]
     public async Task<ActionResult<Producto>> GetProducto(int id)
     {
-        Producto? producto = null;
-        
-        using (var connection = _context.Database.GetDbConnection())
+        try
         {
-            await connection.OpenAsync();
-            using (var command = connection.CreateCommand())
+            var producto = await _context.Productos.FromSqlInterpolated($"EXEC GetProducto {id}")
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync();
+            
+            if (producto == null)
             {
-                command.CommandText = "EXEC GetProducto @IdProducto";
-                command.Parameters.Add(new SqlParameter("@IdProducto", id));
-                
-                using (var reader = await command.ExecuteReaderAsync())
-                {
-                    if (await reader.ReadAsync())
-                    {
-                        producto = new Producto
-                        {
-                            IdProducto = reader.GetInt32(reader.GetOrdinal("IdProducto")),
-                            Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                            CodigoProducto = reader.GetString(reader.GetOrdinal("CodigoProducto")),
-                            Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString(reader.GetOrdinal("Descripcion")),
-                            PrecioVenta = reader.GetDecimal(reader.GetOrdinal("PrecioVenta")),
-                            MinimoExistencia = reader.GetInt32(reader.GetOrdinal("MinimoExistencia")),
-                            Eliminado = reader.GetBoolean(reader.GetOrdinal("Eliminado")),
-                            FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
-                            UltimaFechaActualizacion = reader.GetDateTime(reader.GetOrdinal("UltimaFechaActualizacion"))
-                        };
-                    }
-                }
+                return NotFound();
             }
-        }
-        
-        if (producto == null)
-        {
-            return NotFound();
-        }
 
-        return producto;
+            return producto;
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error interno", detalle = ex.Message });
+        }
     }
 
     // POST: api/Productos
@@ -106,32 +66,47 @@ public class ProductosController : ControllerBase
         string? codigoGenerado = null;
         string? mensaje = null;
 
-        using (var connection = (SqlConnection)_context.Database.GetDbConnection())
+        try
         {
-            await connection.OpenAsync();
-            using (var command = new SqlCommand("InsertProducto", connection))
+            using (var connection = (SqlConnection)_context.Database.GetDbConnection())
             {
-                command.CommandType = CommandType.StoredProcedure;
+                await connection.OpenAsync();
+                try
+                {
+                    using (var command = new SqlCommand("InsertProducto", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
 
-                command.Parameters.Add(new SqlParameter("@Nombre", producto.Nombre));
-                command.Parameters.Add(new SqlParameter("@Descripcion", (object?)producto.Descripcion ?? DBNull.Value));
-                command.Parameters.Add(new SqlParameter("@PrecioVenta", producto.PrecioVenta));
-                command.Parameters.Add(new SqlParameter("@MinimoExistencia", producto.MinimoExistencia));
-                
-                var idParam = new SqlParameter("@IdProducto", SqlDbType.Int) { Direction = ParameterDirection.Output };
-                var codigoParam = new SqlParameter("@CodigoProducto", SqlDbType.NVarChar, 50) { Direction = ParameterDirection.Output };
-                var mensajeParam = new SqlParameter("@Mensaje", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
-                
-                command.Parameters.Add(idParam);
-                command.Parameters.Add(codigoParam);
-                command.Parameters.Add(mensajeParam);
+                        command.Parameters.Add(new SqlParameter("@Nombre", producto.Nombre));
+                        command.Parameters.Add(new SqlParameter("@Descripcion", (object?)producto.Descripcion ?? DBNull.Value));
+                        command.Parameters.Add(new SqlParameter("@PrecioVenta", producto.PrecioVenta));
+                        command.Parameters.Add(new SqlParameter("@MinimoExistencia", producto.MinimoExistencia));
+                        
+                        var idParam = new SqlParameter("@IdProducto", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        var codigoParam = new SqlParameter("@CodigoProducto", SqlDbType.NVarChar, 50) { Direction = ParameterDirection.Output };
+                        var mensajeParam = new SqlParameter("@Mensaje", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
+                        
+                        command.Parameters.Add(idParam);
+                        command.Parameters.Add(codigoParam);
+                        command.Parameters.Add(mensajeParam);
 
-                await command.ExecuteNonQueryAsync();
+                        await command.ExecuteNonQueryAsync();
 
-                nuevoId = (int)idParam.Value;
-                codigoGenerado = codigoParam.Value?.ToString();
-                mensaje = mensajeParam.Value?.ToString();
+                        nuevoId = (int)idParam.Value;
+                        codigoGenerado = codigoParam.Value?.ToString();
+                        mensaje = mensajeParam.Value?.ToString();
+                    }
+                }
+                finally
+                {
+                    if (connection.State == ConnectionState.Open)
+                        connection.Close();
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error interno", detalle = ex.Message });
         }
 
         if (nuevoId == -1)
@@ -155,26 +130,42 @@ public class ProductosController : ControllerBase
 
         string? mensaje = null;
 
-        using (var connection = (SqlConnection)_context.Database.GetDbConnection())
+        try
         {
-            await connection.OpenAsync();
-            using (var command = new SqlCommand("UpdateProducto", connection))
+            using (var connection = (SqlConnection)_context.Database.GetDbConnection())
             {
-                command.CommandType = CommandType.StoredProcedure;
+                await connection.OpenAsync();
+                try
+                {
+                    using (var command = new SqlCommand("UpdateProducto", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
 
-                command.Parameters.Add(new SqlParameter("@IdProducto", id));
-                command.Parameters.Add(new SqlParameter("@Nombre", producto.Nombre));
-                command.Parameters.Add(new SqlParameter("@Descripcion", (object?)producto.Descripcion ?? DBNull.Value));
-                command.Parameters.Add(new SqlParameter("@PrecioVenta", producto.PrecioVenta));
-                command.Parameters.Add(new SqlParameter("@MinimoExistencia", producto.MinimoExistencia));
-                
-                var mensajeParam = new SqlParameter("@Mensaje", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
-                command.Parameters.Add(mensajeParam);
+                        command.Parameters.Add(new SqlParameter("@IdProducto", id));
+                        command.Parameters.Add(new SqlParameter("@Nombre", producto.Nombre));
+                        command.Parameters.Add(new SqlParameter("@CodigoProducto", (object?)producto.CodigoProducto ?? DBNull.Value));
+                        command.Parameters.Add(new SqlParameter("@Descripcion", (object?)producto.Descripcion ?? DBNull.Value));
+                        command.Parameters.Add(new SqlParameter("@PrecioVenta", producto.PrecioVenta));
+                        command.Parameters.Add(new SqlParameter("@MinimoExistencia", producto.MinimoExistencia));
+                        
+                        var mensajeParam = new SqlParameter("@Mensaje", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
+                        command.Parameters.Add(mensajeParam);
 
-                await command.ExecuteNonQueryAsync();
+                        await command.ExecuteNonQueryAsync();
 
-                mensaje = mensajeParam.Value?.ToString();
+                        mensaje = mensajeParam.Value?.ToString();
+                    }
+                }
+                finally
+                {
+                    if (connection.State == ConnectionState.Open)
+                        connection.Close();
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error interno", detalle = ex.Message });
         }
 
         if (mensaje?.Contains("no encontrado") == true)
@@ -191,22 +182,37 @@ public class ProductosController : ControllerBase
     {
         string? mensaje = null;
 
-        using (var connection = (SqlConnection)_context.Database.GetDbConnection())
+        try
         {
-            await connection.OpenAsync();
-            using (var command = new SqlCommand("DeleteProducto", connection))
+            using (var connection = (SqlConnection)_context.Database.GetDbConnection())
             {
-                command.CommandType = CommandType.StoredProcedure;
+                await connection.OpenAsync();
+                try
+                {
+                    using (var command = new SqlCommand("DeleteProducto", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
 
-                command.Parameters.Add(new SqlParameter("@IdProducto", id));
-                
-                var mensajeParam = new SqlParameter("@Mensaje", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
-                command.Parameters.Add(mensajeParam);
+                        command.Parameters.Add(new SqlParameter("@IdProducto", id));
+                        
+                        var mensajeParam = new SqlParameter("@Mensaje", SqlDbType.NVarChar, 255) { Direction = ParameterDirection.Output };
+                        command.Parameters.Add(mensajeParam);
 
-                await command.ExecuteNonQueryAsync();
+                        await command.ExecuteNonQueryAsync();
 
-                mensaje = mensajeParam.Value?.ToString();
+                        mensaje = mensajeParam.Value?.ToString();
+                    }
+                }
+                finally
+                {
+                    if (connection.State == ConnectionState.Open)
+                        connection.Close();
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error interno", detalle = ex.Message });
         }
 
         if (mensaje?.Contains("no encontrado") == true)

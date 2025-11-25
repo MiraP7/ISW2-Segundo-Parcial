@@ -20,25 +20,46 @@ public class InventarioController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<object>>> GetInventario()
     {
-        var connection = _context.Database.GetDbConnection();
-        await connection.OpenAsync();
-
-        using var command = connection.CreateCommand();
-        command.CommandText = "EXEC GetInventario";
-
         var inventario = new List<object>();
-        using var reader = await command.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        
+        try
         {
-            inventario.Add(new
+            using (var connection = _context.Database.GetDbConnection())
             {
-                IdProducto = reader.GetInt32(0),
-                Producto = reader.GetString(1),
-                Existencia = reader.GetInt32(2),
-                MinimoExistencia = reader.GetInt32(3),
-                Estado = reader.GetString(4),
-                UltimaFechaActualizacion = reader.GetDateTime(5)
-            });
+                await connection.OpenAsync();
+                try
+                {
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = "EXEC GetInventario";
+
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                inventario.Add(new
+                                {
+                                    IdProducto = reader.GetInt32(0),
+                                    Producto = reader.GetString(1),
+                                    Existencia = reader.GetInt32(2),
+                                    MinimoExistencia = reader.GetInt32(3),
+                                    Estado = reader.GetString(4),
+                                    UltimaFechaActualizacion = reader.GetDateTime(5)
+                                });
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (connection.State == System.Data.ConnectionState.Open)
+                        connection.Close();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error interno", detalle = ex.Message });
         }
 
         return Ok(inventario);
@@ -48,26 +69,46 @@ public class InventarioController : ControllerBase
     [HttpGet("{idProducto}")]
     public async Task<ActionResult<object>> GetInventarioProducto(int idProducto)
     {
-        var connection = _context.Database.GetDbConnection();
-        await connection.OpenAsync();
-
-        using var command = connection.CreateCommand();
-        command.CommandText = "EXEC GetInventarioByProducto @IdProducto";
-        command.Parameters.Add(new SqlParameter("@IdProducto", idProducto));
-
-        using var reader = await command.ExecuteReaderAsync();
-        if (await reader.ReadAsync())
+        try
         {
-            var resultado = new
+            using (var connection = _context.Database.GetDbConnection())
             {
-                IdProducto = reader.GetInt32(0),
-                Producto = reader.GetString(1),
-                Existencia = reader.GetInt32(2),
-                MinimoExistencia = reader.GetInt32(3),
-                Estado = reader.GetString(4),
-                UltimaFechaActualizacion = reader.GetDateTime(5)
-            };
-            return Ok(resultado);
+                await connection.OpenAsync();
+                try
+                {
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = "EXEC GetInventarioByProducto @IdProducto";
+                        command.Parameters.Add(new SqlParameter("@IdProducto", idProducto));
+
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var resultado = new
+                                {
+                                    IdProducto = reader.GetInt32(0),
+                                    Producto = reader.GetString(1),
+                                    Existencia = reader.GetInt32(2),
+                                    MinimoExistencia = reader.GetInt32(3),
+                                    Estado = reader.GetString(4),
+                                    UltimaFechaActualizacion = reader.GetDateTime(5)
+                                };
+                                return Ok(resultado);
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (connection.State == System.Data.ConnectionState.Open)
+                        connection.Close();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error interno", detalle = ex.Message });
         }
 
         return NotFound(new { mensaje = "No hay inventario para este producto." });

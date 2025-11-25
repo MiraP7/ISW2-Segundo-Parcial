@@ -11,6 +11,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Inventario> Inventarios { get; set; }
     public DbSet<MovimientosInventario> MovimientosInventario { get; set; }
     public DbSet<TipoMovimiento> TipoMovimientos { get; set; }
+    public DbSet<ApiKey> ApiKeys { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,6 +20,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Inventario>().ToTable("Inventario");
         modelBuilder.Entity<MovimientosInventario>().ToTable("MovimientosInventario");
         modelBuilder.Entity<TipoMovimiento>().ToTable("TipoMovimiento");
+        modelBuilder.Entity<ApiKey>().ToTable("ApiKeys");
 
         modelBuilder.Entity<Producto>()
             .HasIndex(p => p.CodigoProducto)
@@ -26,6 +28,10 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Producto>()
             .HasQueryFilter(p => !p.Eliminado);
+
+        modelBuilder.Entity<ApiKey>()
+            .HasIndex(a => a.Clave)
+            .IsUnique();
         
         // Configure relationships
         modelBuilder.Entity<Inventario>()
@@ -36,7 +42,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<MovimientosInventario>()
             .HasOne(m => m.Producto)
             .WithMany()
-            .HasForeignKey(m => m.IdProducto);
+            .HasForeignKey(m => m.IdProductoAsociado);
 
         modelBuilder.Entity<MovimientosInventario>()
             .HasOne(m => m.TipoMovimiento)

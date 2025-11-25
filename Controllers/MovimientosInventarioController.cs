@@ -48,7 +48,7 @@ public class MovimientosInventarioController : ControllerBase
     public async Task<ActionResult<IEnumerable<MovimientosInventario>>> GetMovimientosPorProducto(int idProducto)
     {
         var movimientos = await _context.MovimientosInventario
-            .Where(m => m.IdProducto == idProducto)
+            .Where(m => m.IdProductoAsociado == idProducto)
             .Include(m => m.Producto)
             .Include(m => m.TipoMovimiento)
             .ToListAsync();
@@ -61,17 +61,17 @@ public class MovimientosInventarioController : ControllerBase
     public async Task<ActionResult<object>> PostMovimiento(MovimientosInventario movimiento)
     {
         // Validar que el producto existe
-        var producto = await _context.Productos.FirstOrDefaultAsync(p => p.IdProducto == movimiento.IdProducto);
+        var producto = await _context.Productos.FirstOrDefaultAsync(p => p.IdProducto == movimiento.IdProductoAsociado);
         if (producto == null)
         {
             return NotFound(new { mensaje = "Producto no encontrado." });
         }
 
         // Obtener o crear registro en Inventario
-        var inventario = await _context.Inventarios.FirstOrDefaultAsync(i => i.IdProducto == movimiento.IdProducto);
+        var inventario = await _context.Inventarios.FirstOrDefaultAsync(i => i.IdProducto == movimiento.IdProductoAsociado);
         if (inventario == null)
         {
-            inventario = new Inventario { IdProducto = movimiento.IdProducto, Existencia = 0 };
+            inventario = new Inventario { IdProducto = movimiento.IdProductoAsociado, Existencia = 0 };
             _context.Inventarios.Add(inventario);
         }
 
